@@ -112,12 +112,12 @@ def verify_api_key(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    # Allow requests from dashboard IP without API key
+    # Allow all requests from internal Docker networks (10.x.x.x or 172.x.x.x)
     client_ip = request.client.host
-    if client_ip in ["10.0.1.151", "172.23.0.5"]:  # Dashboard container IPs
+    if client_ip.startswith("10.") or client_ip.startswith("172."):
         return None
     
-    # For all other requests, require API key
+    # For external requests, require API key
     if not MEM0_API_KEY:
         raise HTTPException(status_code=500, detail="API key not configured")
     if not credentials or credentials.credentials != MEM0_API_KEY:
