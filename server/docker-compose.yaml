@@ -11,7 +11,7 @@ services:
       - .env
     networks:
       - mem0_network
-      - dokploy-network  # Add this
+      - dokploy-network
     volumes:
       - ./history:/app/history
       - .:/app
@@ -49,6 +49,11 @@ services:
       - "traefik.http.routers.mem0-ui.entrypoints=websecure"
       - "traefik.http.routers.mem0-ui.tls=true"
       - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
+      
+      # BasicAuth middleware
+      - "traefik.http.middlewares.mem0-dashboard-auth.basicauth.users=admin:{SHA}pMMqlLZzi8SpwIjCk3J4y5MU/bU="
+      - "traefik.http.routers.mem0-ui.middlewares=mem0-dashboard-auth"
+      
       - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
       - "traefik.docker.network=dokploy-network"
     depends_on:
