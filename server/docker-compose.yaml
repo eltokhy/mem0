@@ -3,7 +3,7 @@ name: mem0-dev
 services:
   mem0:
     build:
-      context: ..  # Set context to parent directory
+      context: ..
       dockerfile: server/dev.Dockerfile
     ports:
       - "8888:8000"
@@ -12,37 +12,60 @@ services:
     networks:
       - mem0_network
     volumes:
-      - ./history:/app/history      # History db location. By default, it creates a history.db file on the server folder
-      - .:/app                      # Server code. This allows to reload the app when the server code is updated
-      - ../mem0:/app/packages/mem0  # Mem0 library. This allows to reload the app when the library code is updated
+      - ./history:/app/history
+      - .:/app
+      - ../mem0:/app/packages/mem0
     depends_on:
       postgres:
         condition: service_healthy
       neo4j:
         condition: service_healthy
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Enable auto-reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      - PYTHONDONTWRITEBYTECODE=1  # Prevents Python from writing .pyc files
-      - PYTHONUNBUFFERED=1  # Ensures Python output is sent straight to terminal
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+  mem0-ui:
+    build:
+      context: ../openmemory/ui
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://mem0:8000
+    networks:
+      - mem0_network
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mem0-ui.rule=Host(`mem0.enginecy.cloud`) && PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.mem0-ui.entrypoints=websecure"
+      - "traefik.http.routers.mem0-ui.tls=true"
+      - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
+      - "traefik.http.middlewares.mem0-ui-stripprefix.stripprefix.prefixes=/dashboard"
+      - "traefik.http.routers.mem0-ui.middlewares=mem0-ui-stripprefix"
+      - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+    depends_on:
+      - mem0
 
   postgres:
-      image: ankane/pgvector:v0.5.1
-      restart: on-failure
-      shm_size: "128mb" # Increase this if vacuuming fails with a "no space left on device" error
-      networks:
-        - mem0_network
-      environment:
-        - POSTGRES_USER=postgres
-        - POSTGRES_PASSWORD=postgres
-      healthcheck:
-        test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
-        interval: 5s
-        timeout: 5s
-        retries: 5
-      volumes:
-        - postgres_db:/var/lib/postgresql/data
-      ports:
-        - "8432:5432"
+    image: ankane/pgvector:v0.5.1
+    restart: on-failure
+    shm_size: "128mb"
+    networks:
+      - mem0_network
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    ports:
+      - "8432:5432"
+
   neo4j:
     image: neo4j:5.26.4
     networks:
@@ -54,17 +77,16 @@ services:
       retries: 20
       start_period: 90s
     ports:
-      - "8474:7474" # HTTP
-      - "8687:7687" # Bolt
+      - "8474:7474"
+      - "8687:7687"
     volumes:
       - neo4j_data:/data
     environment:
       - NEO4J_AUTH=neo4j/mem0graph
-      - NEO4J_PLUGINS=["apoc"]  # Add this line to install APOC
+      - NEO4J_PLUGINS=["apoc"]
       - NEO4J_apoc_export_file_enabled=true
       - NEO4J_apoc_import_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true
-
 
 volumes:
   neo4j_data:
@@ -73,3 +95,5 @@ volumes:
 networks:
   mem0_network:
     driver: bridge
+  dokploy-network:
+    external: true
