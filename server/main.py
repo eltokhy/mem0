@@ -99,8 +99,9 @@ class SearchRequest(BaseModel):
 
 
 @app.post("/configure", summary="Configure Mem0")
-def set_config(config: Dict[str, Any]), credentials: HTTPAuthorizationCredentials = Security(security)
-    """Set memory configuration."""
+102
+
+def set_config(config: Dict[str, Any], credentials: HTTPAuthorizationCredentials = Security(security)):
     verify_api_key(credentials)
     global MEMORY_INSTANCE
     MEMORY_INSTANCE = Memory.from_config(config)
