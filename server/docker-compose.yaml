@@ -40,8 +40,6 @@ services:
       - "traefik.http.routers.mem0-ui.entrypoints=websecure"
       - "traefik.http.routers.mem0-ui.tls=true"
       - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
-      - "traefik.http.middlewares.mem0-ui-stripprefix.stripprefix.prefixes=/dashboard"
-      - "traefik.http.routers.mem0-ui.middlewares=mem0-ui-stripprefix"
       - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
       - "traefik.docker.network=dokploy-network"
     depends_on:
