@@ -109,7 +109,7 @@ def set_config(config: Dict[str, Any], credentials: HTTPAuthorizationCredentials
 
 
 @app.post("/memories", summary="Create memories")
-def add_memory(memory_create: MemoryCreate, credentials: HTTPAuthorizationCredentials = Security(security:
+def add_memory(memory_create: MemoryCreate, credentials: HTTPAuthorizationCredentials = Security(security):
     """Store new memories."""
     verify_api_key(credentials)
     if not any([memory_create.user_id, memory_create.agent_id, memory_create.run_id]):
