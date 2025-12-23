@@ -25,7 +25,7 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
 
-  mem0-ui:
+   mem0-ui:
     build:
       context: ../openmemory/ui
       dockerfile: Dockerfile
@@ -36,7 +36,7 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.mem0-ui.rule=Host(`mem0.enginecy.cloud`) && PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.mem0-ui.rule=Host(`dashboard.mem0.enginecy.cloud`)"
       - "traefik.http.routers.mem0-ui.entrypoints=websecure"
       - "traefik.http.routers.mem0-ui.tls=true"
       - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
