@@ -133,6 +133,13 @@ class MemoryCreate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class MemoryFilter(BaseModel):
+    user_id: Optional[str] = None
+    agent_id: Optional[str] = None
+    run_id: Optional[str] = None
+    filters: Optional[Dict[str, Any]] = None
+
+
 class SearchRequest(BaseModel):
     query: str
     user_id: Optional[str] = None
@@ -189,7 +196,40 @@ def add_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.get("/memories/filter", summary="Get memories (with optional filters)")
+@api_router.post("/memories/filter/", summary="Filter memories (POST with trailing slash)")
+@api_router.post("/memories/filter", summary="Filter memories (POST)")
+async def filter_memories_post(
+    filter_req: Optional[MemoryFilter] = None,
+    credentials: HTTPAuthorizationCredentials = Security(security),
+):
+    verify_api_key(credentials)
+    
+    if filter_req:
+        user_id = filter_req.user_id
+        agent_id = filter_req.agent_id
+        run_id = filter_req.run_id
+    else:
+        user_id = agent_id = run_id = None
+    
+    if not any([user_id, agent_id, run_id]):
+        raise HTTPException(status_code=400, detail="At least one identifier is required.")
+    
+    try:
+        params = {k: v for k, v in {
+            "user_id": user_id,
+            "run_id": run_id,
+            "agent_id": agent_id,
+        }.items() if v is not None}
+        
+        return MEMORY_INSTANCE.get_all(**params)
+    except Exception as e:
+        logging.exception("Error in filter_memories_post")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/memories/filter/", summary="Get memories with filters (trailing slash)")
+@api_router.get("/memories/filter", summary="Get memories with filters")
+@api_router.get("/memories/", summary="Get all memories (trailing slash)")
 @api_router.get("/memories", summary="Get all memories")
 def get_all_memories(
     user_id: Optional[str] = None,
