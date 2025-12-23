@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Security
+from fastapi import FastAPI, HTTPException, Security, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -147,9 +147,11 @@ def safe_dump(model):
     return model.model_dump() if hasattr(model, "model_dump") else model.dict()
 
 # ------------------------------------------------------------------------------
-# Routes
+# API Router (all routes under /api/v1/)
 # ------------------------------------------------------------------------------
-@app.post("/configure", summary="Configure Mem0")
+api_router = APIRouter(prefix="/api/v1")
+
+@api_router.post("/configure", summary="Configure Mem0")
 def set_config(
     config: Dict[str, Any],
     credentials: HTTPAuthorizationCredentials = Security(security),
@@ -160,7 +162,7 @@ def set_config(
     return {"message": "Configuration set successfully"}
 
 
-@app.post("/memories", summary="Create memories")
+@api_router.post("/memories", summary="Create memories")
 def add_memory(
     memory_create: MemoryCreate,
     credentials: HTTPAuthorizationCredentials = Security(security),
@@ -187,7 +189,8 @@ def add_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/memories", summary="Get memories")
+@api_router.get("/memories/filter", summary="Get memories (with optional filters)")
+@api_router.get("/memories", summary="Get all memories")
 def get_all_memories(
     user_id: Optional[str] = None,
     run_id: Optional[str] = None,
@@ -212,7 +215,7 @@ def get_all_memories(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/memories/{memory_id}", summary="Get a memory")
+@api_router.get("/memories/{memory_id}", summary="Get a memory")
 def get_memory(
     memory_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security),
@@ -225,7 +228,7 @@ def get_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/search", summary="Search memories")
+@api_router.post("/search", summary="Search memories")
 def search_memories(
     search_req: SearchRequest,
     credentials: HTTPAuthorizationCredentials = Security(security),
@@ -239,7 +242,7 @@ def search_memories(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.put("/memories/{memory_id}", summary="Update a memory")
+@api_router.put("/memories/{memory_id}", summary="Update a memory")
 def update_memory(
     memory_id: str,
     updated_memory: Dict[str, Any],
@@ -253,7 +256,7 @@ def update_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/memories/{memory_id}/history", summary="Get memory history")
+@api_router.get("/memories/{memory_id}/history", summary="Get memory history")
 def memory_history(
     memory_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security),
@@ -266,7 +269,7 @@ def memory_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/memories/{memory_id}", summary="Delete a memory")
+@api_router.delete("/memories/{memory_id}", summary="Delete a memory")
 def delete_memory(
     memory_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security),
@@ -280,7 +283,7 @@ def delete_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/memories", summary="Delete all memories")
+@api_router.delete("/memories", summary="Delete all memories")
 def delete_all_memories(
     user_id: Optional[str] = None,
     run_id: Optional[str] = None,
@@ -306,7 +309,7 @@ def delete_all_memories(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/reset", summary="Reset all memories")
+@api_router.post("/reset", summary="Reset all memories")
 def reset_memory(
     credentials: HTTPAuthorizationCredentials = Security(security),
 ):
@@ -319,6 +322,12 @@ def reset_memory(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Include the API router
+app.include_router(api_router)
+
+# ------------------------------------------------------------------------------
+# Root redirect
+# ------------------------------------------------------------------------------
 @app.get("/", include_in_schema=False)
 def home():
     return RedirectResponse(url="/docs")
