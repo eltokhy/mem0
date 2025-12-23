@@ -1,7 +1,7 @@
 name: mem0-dev
 
 services:
- mem0:
+  mem0:
     build:
       context: ..
       dockerfile: server/dev.Dockerfile
@@ -25,7 +25,7 @@ services:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
 
-   mem0-ui:
+  mem0-ui:
     build:
       context: ../openmemory/ui
       dockerfile: Dockerfile
