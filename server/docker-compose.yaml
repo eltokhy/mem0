@@ -50,7 +50,7 @@ services:
       - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
       
       # Username: admin, Password: DaliDaliPass1#
-      - "traefik.http.middlewares.mem0-dashboard-auth.basicauth.users=admin:$apr1$3zxwf8iq$gNuU/3WO3N6cZRrwDuLwA."
+      - "traefik.http.middlewares.mem0-dashboard-auth.basicauth.users=admin:$$apr1$3zxwf8iq$gNuU/3WO3N6cZRrwDuLwA."
       - "traefik.http.routers.mem0-ui.middlewares=mem0-dashboard-auth"
       
       - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
