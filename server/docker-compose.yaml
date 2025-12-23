@@ -48,11 +48,8 @@ services:
       - "traefik.http.routers.mem0-ui.entrypoints=websecure"
       - "traefik.http.routers.mem0-ui.tls=true"
       - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
-      
-      # Username: admin, Password: DaliDaliPass1#
-      - "traefik.http.middlewares.mem0-auth-v2.basicauth.users=admin:$$apr1$$lP5gZ8Rv$$xG7xDZLJ9gKh8Qr.7H5Tm/"
-      - "traefik.http.routers.mem0-ui.middlewares=mem0-auth-v2"
-      
+      - "traefik.http.middlewares.mem0-ipwhitelist.ipwhitelist.sourcerange=47.196.5.145/32"
+      - "traefik.http.routers.mem0-ui.middlewares=mem0-ipwhitelist"
       - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
     depends_on:
       - mem0
