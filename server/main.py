@@ -99,7 +99,7 @@ class SearchRequest(BaseModel):
 
 
 @app.post("/configure", summary="Configure Mem0")
-102
+1
 
 def set_config(config: Dict[str, Any], credentials: HTTPAuthorizationCredentials = Security(security)):
     verify_api_key(credentials)
