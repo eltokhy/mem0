@@ -32,7 +32,6 @@ services:
       - "traefik.http.routers.mem0-api.tls=true"
       - "traefik.http.routers.mem0-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.mem0-api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=dokploy-network"
 
   mem0-ui:
     build:
@@ -49,13 +48,9 @@ services:
       - "traefik.http.routers.mem0-ui.entrypoints=websecure"
       - "traefik.http.routers.mem0-ui.tls=true"
       - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
-      
-      # BasicAuth middleware
       - "traefik.http.middlewares.mem0-dashboard-auth.basicauth.users=admin:{SHA}pMMqlLZzi8SpwIjCk3J4y5MU/bU="
       - "traefik.http.routers.mem0-ui.middlewares=mem0-dashboard-auth"
-      
       - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
-      - "traefik.docker.network=dokploy-network"
     depends_on:
       - mem0
 
