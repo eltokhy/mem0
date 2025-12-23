@@ -3,7 +3,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Security, APIRouter
+from fastapi import FastAPI, HTTPException, Security, APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -109,11 +109,18 @@ app.add_middleware(
 security = HTTPBearer()
 
 def verify_api_key(
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
+    # Allow requests from dashboard IP without API key
+    client_ip = request.client.host
+    if client_ip in ["10.0.1.151", "172.23.0.5"]:  # Dashboard container IPs
+        return None
+    
+    # For all other requests, require API key
     if not MEM0_API_KEY:
         raise HTTPException(status_code=500, detail="API key not configured")
-    if credentials.credentials != MEM0_API_KEY:
+    if not credentials or credentials.credentials != MEM0_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API key")
     return credentials.credentials
 
@@ -160,21 +167,24 @@ api_router = APIRouter(prefix="/api/v1")
 
 @api_router.post("/configure", summary="Configure Mem0")
 def set_config(
+    request: Request,
     config: Dict[str, Any],
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     global MEMORY_INSTANCE
     MEMORY_INSTANCE = Memory.from_config(config)
     return {"message": "Configuration set successfully"}
 
 
+@api_router.post("/memories/", summary="Create memories (with trailing slash)")
 @api_router.post("/memories", summary="Create memories")
 def add_memory(
+    request: Request,
     memory_create: MemoryCreate,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
 
     if not any([memory_create.user_id, memory_create.agent_id, memory_create.run_id]):
         raise HTTPException(
@@ -199,10 +209,11 @@ def add_memory(
 @api_router.post("/memories/filter/", summary="Filter memories (POST with trailing slash)")
 @api_router.post("/memories/filter", summary="Filter memories (POST)")
 async def filter_memories_post(
+    request: Request,
     filter_req: Optional[MemoryFilter] = None,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     
     if filter_req:
         user_id = filter_req.user_id
@@ -232,12 +243,13 @@ async def filter_memories_post(
 @api_router.get("/memories/", summary="Get all memories (trailing slash)")
 @api_router.get("/memories", summary="Get all memories")
 def get_all_memories(
+    request: Request,
     user_id: Optional[str] = None,
     run_id: Optional[str] = None,
     agent_id: Optional[str] = None,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
 
     if not any([user_id, run_id, agent_id]):
         raise HTTPException(status_code=400, detail="At least one identifier is required.")
@@ -257,10 +269,11 @@ def get_all_memories(
 
 @api_router.get("/memories/{memory_id}", summary="Get a memory")
 def get_memory(
+    request: Request,
     memory_id: str,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     try:
         return MEMORY_INSTANCE.get(memory_id)
     except Exception as e:
@@ -270,10 +283,11 @@ def get_memory(
 
 @api_router.post("/search", summary="Search memories")
 def search_memories(
+    request: Request,
     search_req: SearchRequest,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     try:
         params = {k: v for k, v in safe_dump(search_req).items() if v is not None and k != "query"}
         return MEMORY_INSTANCE.search(query=search_req.query, **params)
@@ -284,11 +298,12 @@ def search_memories(
 
 @api_router.put("/memories/{memory_id}", summary="Update a memory")
 def update_memory(
+    request: Request,
     memory_id: str,
     updated_memory: Dict[str, Any],
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     try:
         return MEMORY_INSTANCE.update(memory_id=memory_id, data=updated_memory)
     except Exception as e:
@@ -298,10 +313,11 @@ def update_memory(
 
 @api_router.get("/memories/{memory_id}/history", summary="Get memory history")
 def memory_history(
+    request: Request,
     memory_id: str,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     try:
         return MEMORY_INSTANCE.history(memory_id=memory_id)
     except Exception as e:
@@ -311,10 +327,11 @@ def memory_history(
 
 @api_router.delete("/memories/{memory_id}", summary="Delete a memory")
 def delete_memory(
+    request: Request,
     memory_id: str,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     try:
         MEMORY_INSTANCE.delete(memory_id=memory_id)
         return {"message": "Memory deleted successfully"}
@@ -325,12 +342,13 @@ def delete_memory(
 
 @api_router.delete("/memories", summary="Delete all memories")
 def delete_all_memories(
+    request: Request,
     user_id: Optional[str] = None,
     run_id: Optional[str] = None,
     agent_id: Optional[str] = None,
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
 
     if not any([user_id, run_id, agent_id]):
         raise HTTPException(status_code=400, detail="At least one identifier is required.")
@@ -351,9 +369,10 @@ def delete_all_memories(
 
 @api_router.post("/reset", summary="Reset all memories")
 def reset_memory(
-    credentials: HTTPAuthorizationCredentials = Security(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
 ):
-    verify_api_key(credentials)
+    verify_api_key(request, credentials)
     try:
         MEMORY_INSTANCE.reset()
         return {"message": "All memories reset"}
