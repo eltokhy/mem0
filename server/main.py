@@ -96,7 +96,9 @@ security = HTTPBearer()
 def verify_api_key(
     credentials: HTTPAuthorizationCredentials = Security(security),
 ):
-    if MEM0_API_KEY and credentials.credentials != MEM0_API_KEY:
+    if not MEM0_API_KEY:
+        raise HTTPException(status_code=500, detail="API key not configured")
+    if credentials.credentials != MEM0_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API key")
     return credentials.credentials
 
