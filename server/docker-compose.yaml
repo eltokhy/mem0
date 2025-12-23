@@ -65,26 +65,6 @@ services:
       - NEO4J_apoc_import_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true
 
-        # OpenMemory UI Dashboard
-  mem0-ui:
-    build:
-      context: ../openmemory/ui
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://mem0:8000
-      - NEXT_PUBLIC_USER_ID=default-user
-    networks:
-      - mem0_network
-    depends_on:
-      - mem0
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mem0-ui.rule=Host(`dashboard.mem0.enginecy.cloud`)"
-      - "traefik.http.routers.mem0-ui.entrypoints=websecure"
-      - "traefik.http.routers.mem0-ui.tls.certresolver=letsencrypt"
-      - "traefik.http.services.mem0-ui.loadbalancer.server.port=3000"
 
 volumes:
   neo4j_data:
