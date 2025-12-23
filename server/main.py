@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Security
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
@@ -86,6 +87,20 @@ app = FastAPI(
     title="Mem0 REST APIs",
     description="A REST API for managing and searching memories for AI agents and apps.",
     version="1.0.0",
+)
+
+# ------------------------------------------------------------------------------
+# CORS Middleware
+# ------------------------------------------------------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://dashboard.mem0.enginecy.cloud",
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ------------------------------------------------------------------------------
