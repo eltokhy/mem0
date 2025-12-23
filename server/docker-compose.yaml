@@ -11,6 +11,7 @@ services:
       - .env
     networks:
       - mem0_network
+      - dokploy-network  # Add this
     volumes:
       - ./history:/app/history
       - .:/app
@@ -24,13 +25,21 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mem0-api.rule=Host(`mem0.enginecy.cloud`)"
+      - "traefik.http.routers.mem0-api.entrypoints=websecure"
+      - "traefik.http.routers.mem0-api.tls=true"
+      - "traefik.http.routers.mem0-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mem0-api.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
 
   mem0-ui:
     build:
       context: ../openmemory/ui
       dockerfile: Dockerfile
     environment:
-      - NEXT_PUBLIC_API_URL=http://mem0:8000
+      - NEXT_PUBLIC_API_URL=https://mem0.enginecy.cloud
     networks:
       - mem0_network
       - dokploy-network
